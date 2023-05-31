@@ -120,7 +120,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     # Step 1: Parse PDF
-    file_path = "src/data/encyclopedia/Beauty.pdf"
+    file_path = "src/data/encyclopedia/Pain.pdf"
     raw_pages, metadata = parse_pdf(file_path)
 
     # Step 2: Create text chunks

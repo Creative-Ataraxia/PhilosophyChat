@@ -1,6 +1,7 @@
 langchain
 chromadb
 tiktoken
+openai
 urllib3==2.0.2
 pdfminer.six==20221105
 python-dotenv==1.0.0
