@@ -49,7 +49,7 @@ def get_chat_message(contents: str = "", align: str = "left") -> str:
     src = f"data:image/gif;base64,{get_local_img(file_path)}"
     if align == "right":
         div_class = "human-line"
-        color = "rgb(165, 239, 127)"
+        color = "rgb(91, 133, 69)"
         if "USER" in st.session_state:
             src = st.session_state.USER.avatar_url
         else:
@@ -68,7 +68,7 @@ def get_chat_message(contents: str = "", align: str = "left") -> str:
 
 async def main(question: str) -> dict:
     res = {'status': 0, 'message': "Success"}
-    chain = inference.make_chain(res)
+    chain = inference.make_chain()
     chat_history = [] 
 
     try:
@@ -104,11 +104,6 @@ async def main(question: str) -> dict:
                 with st.sidebar:
                     st.write("openai_api_response:")
                     st.json({'str': response}, expanded=False)
-
-            if response['status'] != 0:
-                res['status'] = response['status']
-                res['message'] = response['message']
-                return res
 
             # Render the reply as chat reply
             message = f"{answer}"
@@ -231,7 +226,7 @@ with chat_box:
 
 # Define an input box for human prompts
 with prompt_box:
-    question = st.text_input("Your Philosophical Inquiry", value="", help="Ask any philosophical questions", key=f"text_input_{len(st.session_state.Log)}")
+    question = st.text_input("Your Philosophical Inquiry:", value="", help="Ask any philosophical questions", key=f"text_input_{len(st.session_state.Log)}")
 
 # Gate the subsequent chatbot response to only when the user has entered a prompt
 if len(question) > 0:

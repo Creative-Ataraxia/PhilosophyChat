@@ -40,8 +40,7 @@ updated_system_template = """Act as a wise and competent philosophy professor. U
 1. Provide competent and thought provoking philosophical interpretations to my question.
 2. Discuss my question in a thoughtful, eloquent, and philosophical way.
 3. If appropriate, use short stories, allegories, and metaphors to explain any concepts arising from my question.
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
-Always respond in the same language as the question.
+Always use the tone of an old wise sage. Never break character. Try to give source of the knowledge if possible. Always respond in the same language as the question.
 ----------------------
 contexts:
 {context}"""
@@ -56,7 +55,7 @@ qa_prompt = ChatPromptTemplate.from_messages(updated_messages)
 #############
 # Functions #
 #############
-def make_chain(res):
+def make_chain():
     model = ChatOpenAI(
         model_name="gpt-3.5-turbo",
         temperature="0.7",
@@ -79,40 +78,3 @@ def make_chain(res):
         combine_docs_chain_kwargs={"prompt": qa_prompt},
         verbose=True,
     )    
-
-
-def main():
-    chain = make_chain()
-    chat_history = []
-    
-    # Main inqury & answers loop
-    while True:
-        print()
-        question = input("\nYour Philosophical Inquiry: ")
-
-        # strip any harmful code injections
-        question = question.replace("<", "&lt;").replace(">", "&gt;")
-
-        if question == "exit" or question == "quit" or question == "bye":
-            break
-
-        # Get the answer from the chain
-        response = chain({"question": question, "chat_history": chat_history})
-        answer, source = response["answer"], [] if args.hide_source else response['source_documents']
-        chat_history.append(HumanMessage(content=question))
-        chat_history.append(AIMessage(content=answer))
-
-        # Print the result
-        print("\n> Your Philosophical Inquiry:")
-        print(question)
-        print("\n> Musings:")
-        print(answer)
-
-        # Print the relevant sources used for the answer
-        for document in source:
-            print("\nSource > " + document.metadata["source"] + ":")
-            print(document.page_content)
-
-if __name__ == "__main__":
-    main()
-
