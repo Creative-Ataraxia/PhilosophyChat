@@ -4,6 +4,8 @@
 import os
 import argparse
 
+import openai
+import streamlit as st
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chat_models import ChatOpenAI
@@ -16,27 +18,30 @@ from langchain.prompts.chat import (
     HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
 )
-from dotenv import load_dotenv
+
+from config import *
 
 
 #########################
 # Environment Variables #
 #########################
-load_dotenv()
 
-embeddings_model_name = os.environ.get("EMBEDDINGS_MODEL_NAME")
-persist_directory = os.environ.get('PERSIST_DIRECTORY')
-model_n_ctx = os.environ.get('MODEL_N_CTX')
+# Set your OpenAI API Key; streamlit's doc: https://docs.streamlit.io/streamlit-community-cloud/get-started/deploy-an-app/connect-to-data-sources/secrets-management
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+
+embeddings_model_name = EMBEDDINGS_MODEL_NAME
+persist_directory = PERSIST_DIRECTORY
+model_n_ctx = MODEL_N_CTX
 
 # how many chunks to pull from searching the source
-target_source_chunks = int(os.environ.get('TARGET_SOURCE_CHUNKS', 4))
+target_source_chunks = int(TARGET_SOURCE_CHUNKS)
 
 updated_system_template = """Act as a wise and competent philosophy professor. Use the following format and pieces of context to answer my question at the end: 
 1. Provide competent and thought provoking philosophical interpretations to my question.
 2. Discuss my question in a thoughtful, eloquent, and philosophical way.
 3. If appropriate, use short stories, allegories, and metaphors to explain any concepts arising from my question.
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
-Regardless of the question's language, always answer in Simplified Chinese.
+Always respond in the same language as the question.
 ----------------------
 contexts:
 {context}"""
@@ -51,22 +56,10 @@ qa_prompt = ChatPromptTemplate.from_messages(updated_messages)
 #############
 # Functions #
 #############
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='PhilosophyChat: Have a thought-provoking conversation.')
-    parser.add_argument("--hide-source", "-S", action='store_true', 
-                        help='Use this flag to disable printing of source documents used for answers.')
-
-    parser.add_argument("--mute-stream", "-M",
-                        action='store_true',
-                        help='Use this flag to disable the streaming StdOut callback for LLMs.')
-
-    return parser.parse_args()
-
-        
-def make_chain(args):
+def make_chain(res):
     model = ChatOpenAI(
         model_name="gpt-3.5-turbo",
-        temperature="0.5",
+        temperature="0.7",
         streaming=True,
         callbacks=[StreamingStdOutCallbackHandler()],
     )
@@ -82,21 +75,14 @@ def make_chain(args):
     return ConversationalRetrievalChain.from_llm(
         model,
         retriever=vector_store.as_retriever(search_kwargs={"k": target_source_chunks}),
-        return_source_documents=not args.hide_source,
+        return_source_documents=SHOW_SOURCE_DOCUMENTS,
         combine_docs_chain_kwargs={"prompt": qa_prompt},
         verbose=True,
     )    
 
 
 def main():
-    
-    # Parse the command line arguments
-    args = parse_arguments()
-
-    # activate/deactivate the streaming StdOut callback for LLMs
-    callbacks = [] if args.mute_stream else [StreamingStdOutCallbackHandler()]
-    
-    chain = make_chain(args)
+    chain = make_chain()
     chat_history = []
     
     # Main inqury & answers loop
