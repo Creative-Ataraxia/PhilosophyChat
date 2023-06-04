@@ -3,17 +3,28 @@
 ###########
 
 import os
-import openai
-import streamlit as st
-from streamlit_extras.add_vertical_space import add_vertical_space
 import base64
 import asyncio
 import traceback
 from PIL import Image
+
+import openai
+import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
 from transformers import AutoTokenizer
+from langchain.vectorstores import Chroma
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import ConversationalRetrievalChain
+from langchain.schema import HumanMessage, AIMessage
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate,
+)
 
 # import modules
-import inference
 from config import *
 
 
@@ -66,9 +77,52 @@ def get_chat_message(contents: str = "", align: str = "left") -> str:
     """
     return formatted_contents
 
+class StreamingResponseAccumulator(StreamingStdOutCallbackHandler):
+    def __init__(self):
+        super().__init__()
+        self.data = []
+        self.placeholder = st.empty()  # Create an empty text area
+        self.message = ""
+
+    def _accumulate(self, token: str, **kwargs) -> None:
+        # self.data.append(token)
+        self.message += token
+        self.placeholder.markdown(get_chat_message(self.message), unsafe_allow_html=True)
+        # self.placeholder.write(f"Wise Old Philosopher: {self.message}")  # Update the text area with the new message
+
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        """Run on new LLM token. Only available when streaming is enabled."""
+        self._accumulate(token)
+
+def make_chain():
+    model = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature="0.7",
+        streaming=True,
+    )
+    
+    embedding = HuggingFaceEmbeddings(model_name=embeddings_model_name)
+
+    vector_store = Chroma(
+        collection_name="May-2023-Philosophy",
+        embedding_function=embedding,
+        persist_directory=persist_directory,
+    )
+
+    return ConversationalRetrievalChain.from_llm(
+        model,
+        retriever=vector_store.as_retriever(search_kwargs={"k": target_source_chunks}),
+        return_source_documents=SHOW_SOURCE_DOCUMENTS,
+        combine_docs_chain_kwargs={"prompt": qa_prompt},
+        verbose=False,
+    )    
+
+
 async def main(question: str) -> dict:
     res = {'status': 0, 'message': "Success"}
-    chain = inference.make_chain()
+    chain = make_chain()
+    accumulator = StreamingResponseAccumulator()
     chat_history = [] 
 
     try:
@@ -88,8 +142,8 @@ async def main(question: str) -> dict:
             contents = line.split("Seeker: ")[1]
             st.markdown(get_chat_message(contents, align="right"), unsafe_allow_html=True)
 
-            reply_box = st.empty()
-            reply_box.markdown(get_chat_message(), unsafe_allow_html=True)
+            # reply_box = st.empty()
+            # reply_box.markdown(get_chat_message(), unsafe_allow_html=True)
 
             # This is one of those small three-dot animations to indicate the bot is "writing"
             writing_animation = st.empty()
@@ -97,23 +151,23 @@ async def main(question: str) -> dict:
             writing_animation.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;<img src='data:image/gif;base64,{get_local_img(file_path)}' width=30 height=10>", unsafe_allow_html=True)
 
             # Get answer from the chain
-            response = chain({"question": question, "chat_history": chat_history})
+            response = chain({"question": question, "chat_history": chat_history}, callbacks=[accumulator])
             answer, source = response["answer"], [] if not SHOW_SOURCE_DOCUMENTS else response['source_documents']
 
             if DEBUG:
                 with st.sidebar:
                     st.write("openai_api_response:")
                     st.json({'str': response}, expanded=False)
+                    st.json(st.session_state.Memory, expanded=False)
 
             # Render the reply as chat reply
-            message = f"{answer}"
-            reply_box.markdown(get_chat_message(message), unsafe_allow_html=True)
+            # reply_box.markdown(get_chat_message(answer), unsafe_allow_html=True)
 
             # Clear the writing animation
             writing_animation.empty()
 
             # Update the chat log and the model memory
-            st.session_state.Log.append(f"Philosopher: {message}")
+            st.session_state.Log.append(f"Philosopher: {answer}")
             st.session_state.Memory.append({'role': "assistant", 'content': answer})
 
     except:
@@ -133,6 +187,29 @@ errors = []
 # Set your OpenAI API Key; streamlit's doc: https://docs.streamlit.io/streamlit-community-cloud/get-started/deploy-an-app/connect-to-data-sources/secrets-management
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
+embeddings_model_name = EMBEDDINGS_MODEL_NAME
+persist_directory = PERSIST_DIRECTORY
+model_n_ctx = MODEL_N_CTX
+
+# how many chunks to pull from searching the source
+target_source_chunks = int(TARGET_SOURCE_CHUNKS)
+
+updated_system_template = """Act as a wise and competent philosophy professor. Use the following format and pieces of context to answer my question at the end: 
+1. Provide competent and thought provoking philosophical interpretations to my question.
+2. Discuss my question in a thoughtful, eloquent, and philosophical way.
+3. If appropriate, use short stories, allegories, and metaphors to explain any concepts arising from my question.
+Always use the tone of an old wise sage. Never break character. Try to give source of the knowledge if possible. Always respond in the same language as the question.
+----------------------
+contexts:
+{context}"""
+
+updated_messages = [
+    SystemMessagePromptTemplate.from_template(updated_system_template),
+    HumanMessagePromptTemplate.from_template("{question}"),
+]
+
+qa_prompt = ChatPromptTemplate.from_messages(updated_messages)
+
 if len(errors) > 0:
     st.error("\n".join(errors))
     st.stop()
@@ -150,7 +227,7 @@ st.set_page_config(
     page_title="Philosophy Chat",
     page_icon=favicon,
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="collapsed" if DEBUG else "auto",
     menu_items={
         'Get help': 'https://twitter.com/',
         'Report a bug': "https://github.com/Creative-Ataraxia",
@@ -182,19 +259,7 @@ st.subheader("")
 chat_box = st.container()
 add_vertical_space(2)
 prompt_box = st.empty()
-add_vertical_space(2)
-footer = st.container()
-
-with footer:
-    # st.markdown("""
-    # <div align=right><small>
-    # Page views: <img src="https://www.cutercounter.com/hits.php?id=hvxndaff&nd=5&style=1" border="0" alt="hit counter"><br>
-    # Unique visitors: <img src="https://www.cutercounter.com/hits.php?id=hxndkqx&nd=5&style=1" border="0" alt="website counter"><br>
-    # GitHub <a href="https://github.com/tipani86/CatGDP"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/tipani86/CatGDP?style=social"></a>
-    # </small></div>
-    # """, unsafe_allow_html=True)
-    # add_vertical_space(2)
-    st.write('Made with ❤️ by [Creative_Ataraxia](<https://github.com/Creative-Ataraxia?tab=repositories>)')
+add_vertical_space(2)  
 
 if DEBUG:
     with st.sidebar:
@@ -242,3 +307,5 @@ if len(question) > 0:
         with prompt_box:
             if st.button("Show Text Box"):
                 st.experimental_rerun()
+
+st.write('Made with ❤️ by [Creative_Ataraxia](<https://github.com/Creative-Ataraxia?tab=repositories>)')
