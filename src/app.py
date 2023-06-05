@@ -5,6 +5,7 @@
 import os
 import asyncio
 import traceback
+import random
 
 # Libraries
 import openai
@@ -50,6 +51,12 @@ def make_chain():
         combine_docs_chain_kwargs={"prompt": QA_PROMPT},
         verbose=False,
     )    
+
+
+def select_premade_prompt():
+    i = random.randint(0, len(PRE_MADE_PROMPTS)-1)
+    question = PRE_MADE_PROMPTS[i]
+    return question
 
 
 async def main(question: str):
@@ -134,6 +141,11 @@ with st.spinner("Loading tokenizer..."):
 ################
 # Streamlit UI #
 ################
+# State Management
+if "Memory" not in st.session_state:
+    st.session_state.Memory = []
+    st.session_state.Log = [INITIAL_MESSAGE]
+
 # Define main layout
 st.title("Welcome to Philosophy Chat / 哲学畅谈 / 哲学チャット!")
 st.divider()
@@ -144,16 +156,13 @@ add_vertical_space(2)
 chat_box = st.container()
 st.divider()
 prompt_box = st.empty()
+premade_prompt_container = st.empty()
 add_vertical_space(1)
+
 
 ##############
 # Main Logic #
 ##############
-
-if "Memory" not in st.session_state:
-    st.session_state.Memory = []
-    st.session_state.Log = [INITIAL_MESSAGE]
-
 # Render chat history so far
 with chat_box:
     for line in st.session_state.Log:
@@ -167,9 +176,16 @@ with chat_box:
             contents = line.split("Seeker: ")[1]
             st.markdown(get_chat_message(contents, align="right"), unsafe_allow_html=True)
 
-# Define an input box for human prompts
+# Input box UI for human prompts
 with prompt_box:
     question = st.text_input("Your Philosophical Inquiry:", value="", help="Explore any philosophical topics", key=f"text_input_{len(st.session_state.Log)}")
+
+# Pre-made prompts for users
+with premade_prompt_container.container():
+    if st.button("You may also want to ask: "):
+        Premade_Prompt = select_premade_prompt()
+        st.text(Premade_Prompt)
+        
 
 # Gate the subsequent chatbot response to only when the user has entered a prompt
 if len(question) > 0:
@@ -186,5 +202,11 @@ if len(question) > 0:
             if st.button("Refresh the App"):
                 st.experimental_rerun()
 
+
 add_vertical_space(3)  
 st.write('Made with ❤️ by [Creative_Ataraxia](<https://github.com/Creative-Ataraxia?tab=repositories>)')
+
+if st.button('Empty Chat'):
+    chat_box.empty()
+    st.session_state.Log = [INITIAL_MESSAGE]
+    st.experimental_rerun()
