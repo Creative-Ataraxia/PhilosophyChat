@@ -6,6 +6,7 @@ import os
 import asyncio
 import traceback
 import random
+from PIL import Image
 
 # Libraries
 import openai
@@ -20,6 +21,7 @@ from langchain.chains import ConversationalRetrievalChain
 from constants import *
 from utils import *
 from callback_override import StreamingResponseAccumulator
+from sidebar import sidebar
 
 
 ################
@@ -111,12 +113,14 @@ st.set_page_config(
     page_title="Philosophy Chat",
     page_icon=get_asset(os.path.join(ROOT_DIR, "src", "assets", "AI_icon.png"), is_image=True),
     layout="wide",
-    initial_sidebar_state="collapsed" if DEBUG else "auto",
+    initial_sidebar_state="expanded",
     menu_items={
         'Get help': 'https://github.com/Creative-Ataraxia',
         'Report a bug': "https://github.com/Creative-Ataraxia",
         'About': "This conversational AI is embedded with 500MBs of philosophy texts. Given the right prompt layouts, this Chatbot should be able to engage in in-depth philosophical discussions."
     })
+
+sidebar()
 
 st.markdown(get_css(), unsafe_allow_html=True)
 
@@ -146,13 +150,14 @@ if "Memory" not in st.session_state:
     st.session_state.Memory = []
     st.session_state.Log = [INITIAL_MESSAGE]
 
+if "premade_prompts" not in st.session_state:
+    st.session_state.premade_prompts = ""
+
 # Define main layout
-st.title("Welcome to Philosophy Chat / 哲学畅谈 / 哲学チャット!")
+banner = Image.open(os.path.join(ROOT_DIR, "src", "assets", "banner_The_School_of_Athens.jpg"))
+st.image(banner)
+st.subheader("Welcome to Philosophy Chat / 哲学畅谈 / 哲学チャット!")
 st.divider()
-st.markdown("##### Chat with over 250,000 pages of modern & historical philosophy texts")
-st.markdown("##### 与超过25万页古典和现代哲学典籍对话")
-st.markdown("##### 25万ページ以上の現代・歴史哲学のテキストを使ったチャット")
-add_vertical_space(2)
 chat_box = st.container()
 st.divider()
 prompt_box = st.empty()
@@ -178,13 +183,14 @@ with chat_box:
 
 # Input box UI for human prompts
 with prompt_box:
-    question = st.text_input("Your Philosophical Inquiry:", value="", help="Explore any philosophical topics", key=f"text_input_{len(st.session_state.Log)}")
+    question = st.text_input("Your Philosophical Inquiry:", value="", placeholder=st.session_state.premade_prompts, help="Explore any philosophical topics", key=f"text_input_{len(st.session_state.Log)}")
 
 # Pre-made prompts for users
 with premade_prompt_container.container():
     if st.button("You may also want to ask: "):
         Premade_Prompt = select_premade_prompt()
         st.text(Premade_Prompt)
+        st.session_state.premade_prompts = Premade_Prompt
         
 
 # Gate the subsequent chatbot response to only when the user has entered a prompt
@@ -202,9 +208,7 @@ if len(question) > 0:
             if st.button("Refresh the App"):
                 st.experimental_rerun()
 
-
-add_vertical_space(3)  
-st.write('Made with ❤️ by [Creative_Ataraxia](<https://github.com/Creative-Ataraxia?tab=repositories>)')
+#st.text('"The unexamined life is not worth living." - Socrates')
 
 if st.button('Empty Chat'):
     chat_box.empty()
