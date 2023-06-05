@@ -2,6 +2,7 @@ import streamlit as st
 
 def record_feedback(feedback: str):
     st.session_state.feedback.append(feedback)
+    print(feedback)
     
 def sidebar():
     if "feedback" not in st.session_state:
