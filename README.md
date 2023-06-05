@@ -1,7 +1,9 @@
-# A Chatbot ingested with the full standford encyclopedia of philosophy
+# Philosophy Chat
 
-## Have a more in-depth philosophical conversation
+## A Chatbot ingested with over 250,000 pages of modern & traditional philosophical texts
 
-## [Hosted App]()
+### Given the right prompts, this Chatbot should be able to engage in in-depth philosophical discussions
+
+### [Hosted App]()
 
 ### Made with ❤️ by [Creative_Ataraxia](https://github.com/Creative-Ataraxia?tab=repositories)

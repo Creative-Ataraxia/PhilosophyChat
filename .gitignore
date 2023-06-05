@@ -2,3 +2,5 @@ local
 __pycache__
 encyclopedia
 clean_filenames.py
+config.py
+prompt_templates.json
