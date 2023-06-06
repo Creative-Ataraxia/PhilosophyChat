@@ -36,7 +36,7 @@ def get_css() -> str:
 
 
 def get_chat_message(contents: str = "", align: str = "left") -> str:
-    div_class, color, asset = ("AI-line", "rgb(240, 242, 246)", "AI_icon.png") if align != "right" else ("human-line", "rgb(91, 133, 69)", "user_icon.png")
+    div_class, color, asset = ("AI-line", "rgb(93, 97, 105)", "AI_icon.png") if align != "right" else ("human-line", "rgb(91, 133, 69)", "user_icon.png")
     asset_path = os.path.join(ROOT_DIR, "src", "assets", asset)
     src = f"data:image/gif;base64,{get_asset(asset_path)}"
     icon_code = f"<img class='chat-icon' src='{src}' width=32 height=32 alt='avatar'>"

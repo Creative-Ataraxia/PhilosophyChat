@@ -113,7 +113,7 @@ st.set_page_config(
     page_title="Philosophy Chat",
     page_icon=get_asset(os.path.join(ROOT_DIR, "src", "assets", "AI_icon.png"), is_image=True),
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
     menu_items={
         'Get help': 'https://github.com/Creative-Ataraxia/PhilosophyChat',
         'Report a bug': "https://github.com/Creative-Ataraxia/PhilosophyChat",
