@@ -40,4 +40,4 @@ def get_chat_message(contents: str = "", align: str = "left") -> str:
     asset_path = os.path.join(ROOT_DIR, "src", "assets", asset)
     src = f"data:image/gif;base64,{get_asset(asset_path)}"
     icon_code = f"<img class='chat-icon' src='{src}' width=32 height=32 alt='avatar'>"
-    return f"""<div class="{div_class}">{icon_code}<div class="chat-bubble" style="background: {color};">&#8203;{contents}</div></div>"""
+    return f"""<div class="{div_class}">{icon_code}<div class="chat-bubble" style="background: {color}; color: white;">&#8203;{contents}</div></div>"""
