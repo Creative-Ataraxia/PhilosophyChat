@@ -156,7 +156,8 @@ if "premade_prompts" not in st.session_state:
 # Define main layout
 banner = Image.open(os.path.join(ROOT_DIR, "src", "assets", "banner_The_School_of_Athens.jpg"))
 st.image(banner)
-st.subheader("Welcome to Philosophy Chat / 哲学畅谈 / 哲学チャット!")
+st.subheader("Welcome to")
+st.subheader("Philosophy Chat / 哲学畅谈 / 哲学チャット!")
 st.divider()
 chat_box = st.container()
 st.divider()
