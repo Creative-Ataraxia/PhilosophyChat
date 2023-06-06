@@ -115,8 +115,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get help': 'https://github.com/Creative-Ataraxia',
-        'Report a bug': "https://github.com/Creative-Ataraxia",
+        'Get help': 'https://github.com/Creative-Ataraxia/PhilosophyChat',
+        'Report a bug': "https://github.com/Creative-Ataraxia/PhilosophyChat",
         'About': "This conversational AI is embedded with 500MBs of philosophy texts. Given the right prompt layouts, this Chatbot should be able to engage in in-depth philosophical discussions."
     })
 

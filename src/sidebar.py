@@ -40,7 +40,7 @@ def sidebar():
         # TODO: update repo address
         st.markdown(
             "This tool is a work in progress. "
-            "Contributions are welcome on [GitHub](https://github.com/Creative-Ataraxia). "
+            "Contributions are welcome on [GitHub](https://github.com/Creative-Ataraxia/PhilosophyChat). "
             "Bug reports and feature requests can also be submitted through Github."
         )
         st.divider()
