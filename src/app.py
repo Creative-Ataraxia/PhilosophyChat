@@ -187,7 +187,7 @@ with prompt_box:
 
 # Pre-made prompts for users
 with premade_prompt_container.container():
-    if st.button("You may also want to ask: "):
+    if st.button("new ideas💡: "):
         Premade_Prompt = select_premade_prompt()
         st.text(Premade_Prompt)
         st.session_state.premade_prompts = Premade_Prompt
